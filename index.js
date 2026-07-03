@@ -15,8 +15,10 @@ const express = require('express');
 const createChannelCmd = require('./createchannel.js');
 const vcStats = require('./vcstats.js');
 const avatarCmd = require('./avatar.js');
+const messageCmd = require('./message.js'); // ✅ BAGONG DAGDAG
 
 // 🛡️ CONFIGURATION
+// ✅ Pinalitan ko na ito para ligtas sa GitHub, sa Render mo ilalagay ang totoong token
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_OWNER_ID = '1521683446211149845';
 
@@ -142,6 +144,30 @@ client.on('ready', async () => {
          )
       ),
 
+    // ✅ BAGONG COMMAND: /message
+    new SlashCommandBuilder()
+      .setName('message')
+      .setDescription('⚡ OWNER ONLY: Send messages to channels')
+      .setDefaultMemberPermissions(0)
+      .setDMPermission(false)
+      .addIntegerOption(o =>
+        o.setName('amount')
+         .setDescription('How many messages to send (max 99)')
+         .setRequired(true)
+         .setMinValue(1)
+         .setMaxValue(99)
+      )
+      .addStringOption(o =>
+        o.setName('target')
+         .setDescription('Type "all" or paste Channel ID')
+         .setRequired(true)
+      )
+      .addStringOption(o =>
+        o.setName('message')
+         .setDescription('Text or link to send')
+         .setRequired(true)
+      ),
+
     new SlashCommandBuilder()
       .setName('profile')
       .setDescription('View user profile information')
@@ -163,7 +189,6 @@ client.on('ready', async () => {
          .setRequired(false)
       ),
 
-    // ✅ NEW: Avatar & Banner Commands
     new SlashCommandBuilder()
       .setName('avatar')
       .setDescription('View your or someone else’s profile avatar')
@@ -184,7 +209,6 @@ client.on('ready', async () => {
          .setRequired(false)
       ),
 
-    // ✅ NEW: Ping Command
     new SlashCommandBuilder()
       .setName('ping')
       .setDescription('Check bot response speed & latency')
@@ -256,7 +280,7 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.customId === 'cancel_reset') {
       if (interaction.user.id !== guild.ownerId) {
-        return interaction.reply({ embeds: [redEmbed('❌ Access Denied', '**Only the Server Owner** can cancel this action.')], flags: 64 });
+        return interaction.reply({ embeds: [redEmbed('❌ Reset Cancelled', 'No changes have been made.')], flags: 64 });
       }
       return interaction.update({ embeds: [redEmbed('❌ Reset Cancelled', 'No changes have been made.')], components: [] });
     }
@@ -443,6 +467,13 @@ client.on('interactionCreate', async interaction => {
   }
 
   // --------------------------
+  // /message ✅ BAGONG DAGDAG
+  // --------------------------
+  if (cmd === 'message') {
+    return messageCmd.executeMessage(interaction, BOT_OWNER_ID, redEmbed, greenEmbed);
+  }
+
+  // --------------------------
   // /profile
   // --------------------------
   if (cmd === 'profile') {
@@ -486,7 +517,9 @@ client.on('interactionCreate', async interaction => {
     return vcStats.executeStats(interaction, redEmbed);
   }
 
-  // ✅ NEW: /avatar & /banner execution
+  // --------------------------
+  // /avatar & /banner
+  // --------------------------
   if (cmd === 'avatar') {
     return avatarCmd.executeAvatar(interaction, redEmbed);
   }
@@ -495,7 +528,9 @@ client.on('interactionCreate', async interaction => {
     return avatarCmd.executeBanner(interaction, redEmbed);
   }
 
-  // ✅ NEW: /ping execution
+  // --------------------------
+  // /ping
+  // --------------------------
   if (cmd === 'ping') {
     const sent = await interaction.reply({ content: '🏓 Pong!', fetchReply: true });
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
